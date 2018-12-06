@@ -42,6 +42,12 @@ require_once('roles.inc.php');
 /** Testlink Smarty class wrapper sets up the default smarty settings for testlink */
 require_once('tlsmarty.inc.php');
 
+$authCfg = config_get('authentication');
+if($authCfg['cas_enable'])
+{
+  // Load the CAS lib
+  require_once 'CAS.php';
+}
 /** Initialize the Event System */
 require_once('event_api.php' );
 

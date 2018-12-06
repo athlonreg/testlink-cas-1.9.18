@@ -23,6 +23,7 @@ require_once('doAuthorize.php');
 $templateCfg = templateConfiguration();
 $doRenderLoginScreen = false;
 $doAuthPostProcess = false;
+$authCfg = config_get('authentication');
 
 doDBConnect($db, database::ONERROREXIT);
 $args = init_args();
@@ -85,28 +86,60 @@ switch($args->action)
   break;
 
   case 'loginform':
-    $doRenderLoginScreen = true;
-    $gui->draw = true;
-    $op = null;
-
-    // unfortunatelly we use $args->note in order to do some logic.
-    if( ($args->note=trim($args->note)) == "" )
-    {
-      if( $gui->authCfg['SSO_enabled'] )
+    if($authCfg['cas_enable'])
+    {    
+      if($authCfg['cas_debug_enable'])
       {
-        doSessionStart(true);
-        $doAuthPostProcess = true;
+        phpCAS::setDebug($authCfg['cas_debug_file']);
+      }
+      // Initialize phpCAS
+      phpCAS::client(CAS_VERSION_2_0, $authCfg['cas_server_name'], $authCfg['cas_server_port'], $authCfg['cas_server_path']);
+      // For production use set the CA certificate that is the issuer of the cert
+      // on the CAS server and uncomment the line below
+      // phpCAS::setCasServerCACert($cas_server_ca_cert_path);
+      
+      // For quick testing you can disable SSL validation of the CAS server.
+      // THIS SETTING IS NOT RECOMMENDED FOR PRODUCTION.
+      // VALIDATING THE CAS SERVER IS CRUCIAL TO THE SECURITY OF THE CAS PROTOCOL!
+      phpCAS::setNoCasServerValidation();
         
-        switch ($gui->authCfg['SSO_method']) 
+      // Override the validation url for any (ST and PT) CAS 2.0 validation
+      //phpCAS::setServerProxyValidateURL('http://192.168.1.40:8080/cas/proxyValidate');
+        
+      // Override the validation url for any CAS 1.0 validation
+      //phpCAS::setServerServiceValidateURL('http://192.168.1.40:8080/cas/serviceValidate');
+              
+      phpCAS::handleLogoutRequests();
+      phpCAS::forceAuthentication();
+      $options = array('doSessionExistsCheck' => ($args->action=='doLogin'));
+      $op = doCASAuthorize($db,$options);
+      $doAuthPostProcess = true;
+    }
+    else
+    {
+      $doRenderLoginScreen = true;
+      $gui->draw = true;
+      $op = null;
+
+      // unfortunatelly we use $args->note in order to do some logic.
+      if( ($args->note=trim($args->note)) == "" )
+      {
+        if( $gui->authCfg['SSO_enabled'] )
         {
-          case 'CLIENT_CERTIFICATE':
-            $op = doSSOClientCertificate($db,$_SERVER,$gui->authCfg);
-          break;
+          doSessionStart(true);
+          $doAuthPostProcess = true;
           
-          case 'WEBSERVER_VAR':
-            //DEBUGsyslogOnCloud('Trying to execute SSO using SAML');
-            $op = doSSOWebServerVar($db,$gui->authCfg);
-          break;
+          switch ($gui->authCfg['SSO_method']) 
+          {
+            case 'CLIENT_CERTIFICATE':
+              $op = doSSOClientCertificate($db,$_SERVER,$gui->authCfg);
+            break;
+            
+            case 'WEBSERVER_VAR':
+              //DEBUGsyslogOnCloud('Trying to execute SSO using SAML');
+              $op = doSSOWebServerVar($db,$gui->authCfg);
+            break;
+          }
         }
       }
     }
@@ -233,6 +266,7 @@ function init_gui(&$db,$args)
       session_destroy();
       $gui->note = lang_get('session_expired');
       $gui->reqURI = null;
+      redirect(TL_BASE_HREF ."login.php?destination=".$args->destination);
     break;
         
     case 'first':

@@ -523,6 +523,17 @@ $tlCfg->authentication['ldap'][1]['ldap_email_field'] = 'mail';
 $tlCfg->authentication['ldap'][1]['ldap_firstname_field'] = 'givenname';
 $tlCfg->authentication['ldap'][1]['ldap_surname_field'] = 'sn';
 
+/**
+ * CAS authentication credentials.
+ * Configure using custom_config.inc.php
+ */
+$tlCfg->authentication['cas_enable'] = false;
+$tlCfg->authentication['cas_server_name'] = 'localhost';
+$tlCfg->authentication['cas_server_port'] = 8080;
+$tlCfg->authentication['cas_server_path'] = 'cas';
+$tlCfg->authentication['cas_debug_enable'] = false;
+$tlCfg->authentication['cas_debug_file'] = '/var/testlink/logs/phpCAS.log';
+
 
 // Follows Mantisbt idea.
 // True if user does not exist on DB, but can be get from LDAP, 
