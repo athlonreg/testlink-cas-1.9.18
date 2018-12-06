@@ -33,9 +33,9 @@ function doCASAuthorize(&$db,$options=null)
       $user->authentication = 'LDAP';  // force for auth_does_password_match
       $user->setPassword($user->login);  // write password on DB anyway
   }
-  $user->emailAddress = $_SESSION['phpCAS']['attributes']['mail'];
-  $user->firstName = $_SESSION['phpCAS']['attributes']['sn'];
-  $user->lastName = $_SESSION['phpCAS']['attributes']['givenName'];
+//  $user->emailAddress = $_SESSION['phpCAS']['attributes']['mail'];
+//  $user->firstName = $_SESSION['phpCAS']['attributes']['sn'];
+//  $user->lastName = $_SESSION['phpCAS']['attributes']['givenName'];
   $doLogin = ($user->writeToDB($db) == tl::OK);
 
   if( $doLogin )
